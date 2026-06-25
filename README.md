@@ -2,6 +2,14 @@
 
 Rust bindings for the [Nodora](https://nodora.org) rule engine.
 
+### Install
+
+Run the following cargo command in your project directory:
+
+```bash
+cargo add nodora
+```
+
 ### Prebuilt targets
 
 | Target                      |     |
