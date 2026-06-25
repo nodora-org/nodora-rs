@@ -1,0 +1,4 @@
+# Forcing a source build here ensures local edits to bridge/ take effect during
+# development rather than silently linking a downloaded release archive
+[env]
+NODORA_BUILD_FROM_SOURCE = "1"
