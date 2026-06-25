@@ -51,8 +51,8 @@ jobs:
 
       - name: Checksum
         working-directory: dist
-        run: sha256sum "libnodora-${{ matrix.target }}.a" | awk '{print $1}' \
-          > "libnodora-${{ matrix.target }}.a.sha256"
+        run: |
+          sha256sum "libnodora-${{ matrix.target }}.a" | awk '{print $1}' > "libnodora-${{ matrix.target }}.a.sha256"
 
       - uses: actions/upload-artifact@v4
         with:
@@ -95,9 +95,8 @@ jobs:
 
       - name: Checksum
         working-directory: dist
-        run:
-          shasum -a 256 "libnodora-${{ matrix.target }}.a" | awk '{print $1}' \
-          > "libnodora-${{ matrix.target }}.a.sha256"
+        run: |
+          shasum -a 256 "libnodora-${{ matrix.target }}.a" | awk '{print $1}' > "libnodora-${{ matrix.target }}.a.sha256"
 
       - uses: actions/upload-artifact@v4
         with:
