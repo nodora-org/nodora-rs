@@ -46,24 +46,24 @@ func envelope(m map[string]any) *C.char {
 //export NodoraCompile
 func NodoraCompile(src *C.char) *C.char {
 	c := compiler.NewCompiler()
-	prog, err := c.Compile(C.GoString(src))
+	ruleset, err := c.Compile(C.GoString(src))
 	if err != nil {
 		return fail(err)
 	}
-	return ok(prog)
+	return ok(ruleset)
 }
 
 //export NodoraNewEvaluator
-func NodoraNewEvaluator(programJSON *C.char) *C.char {
-	var program nir.Program
-	if err := json.Unmarshal([]byte(C.GoString(programJSON)), &program); err != nil {
-		return failMsg("failed to parse program: " + err.Error())
+func NodoraNewEvaluator(rulesetJSON *C.char) *C.char {
+	var ruleset nir.Ruleset
+	if err := json.Unmarshal([]byte(C.GoString(rulesetJSON)), &ruleset); err != nil {
+		return failMsg("failed to parse ruleset: " + err.Error())
 	}
 
 	mu.Lock()
 	nextID++
 	id := nextID
-	evaluators[id] = evaluator.NewEvaluator(&program)
+	evaluators[id] = evaluator.NewEvaluator(&ruleset)
 	mu.Unlock()
 
 	return ok(id)

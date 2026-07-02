@@ -2,7 +2,7 @@ use serde_json::json;
 
 #[test]
 fn compiles_and_evaluates_a_basic_rule() {
-    let program = nodora::compile(
+    let ruleset = nodora::compile(
         r#"
         rule AdultCheck {
             out is_adult = input.age >= 18
@@ -11,7 +11,7 @@ fn compiles_and_evaluates_a_basic_rule() {
     )
     .expect("compile");
 
-    let evaluator = program.evaluator().expect("evaluator");
+    let evaluator = ruleset.evaluator().expect("evaluator");
 
     let adult = evaluator
         .evaluate("AdultCheck", &json!({ "age": 21 }))
@@ -26,7 +26,7 @@ fn compiles_and_evaluates_a_basic_rule() {
 
 #[test]
 fn reuses_one_evaluator_across_inputs() {
-    let program = nodora::compile(
+    let ruleset = nodora::compile(
         r#"
         rule Total {
             out doubled = input.n * 2
@@ -34,7 +34,7 @@ fn reuses_one_evaluator_across_inputs() {
         "#,
     )
     .expect("compile");
-    let evaluator = program.evaluator().expect("evaluator");
+    let evaluator = ruleset.evaluator().expect("evaluator");
 
     for n in 0..5 {
         let r = evaluator
@@ -46,7 +46,7 @@ fn reuses_one_evaluator_across_inputs() {
 
 #[test]
 fn emits_signals() {
-    let program = nodora::compile(
+    let ruleset = nodora::compile(
         r#"
         signal Greet(name)
         rule Hello {
@@ -56,7 +56,7 @@ fn emits_signals() {
     )
     .expect("compile");
 
-    let result = program
+    let result = ruleset
         .evaluator()
         .expect("evaluator")
         .evaluate("Hello", &json!({ "name": "world" }))
@@ -69,7 +69,7 @@ fn emits_signals() {
 
 #[test]
 fn no_signal_when_condition_false() {
-    let program = nodora::compile(
+    let ruleset = nodora::compile(
         r#"
         signal Alarm(level)
         rule Guard {
@@ -78,7 +78,7 @@ fn no_signal_when_condition_false() {
         "#,
     )
     .expect("compile");
-    let evaluator = program.evaluator().expect("evaluator");
+    let evaluator = ruleset.evaluator().expect("evaluator");
 
     let quiet = evaluator
         .evaluate("Guard", &json!({ "hot": false }))
@@ -98,11 +98,11 @@ fn compile_error_is_reported() {
 }
 
 #[test]
-fn roundtrips_program_json() {
-    let program = nodora::compile("rule R { out v = 1 + 2 }").expect("compile");
-    let json = program.to_json();
+fn roundtrips_ruleset_json() {
+    let ruleset = nodora::compile("rule R { out v = 1 + 2 }").expect("compile");
+    let json = ruleset.to_json();
 
-    let reloaded = nodora::Program::from_json(&json).expect("reload");
+    let reloaded = nodora::Ruleset::from_json(&json).expect("reload");
     let result = reloaded
         .evaluator()
         .expect("evaluator")

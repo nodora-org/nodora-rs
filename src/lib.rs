@@ -8,7 +8,7 @@ mod ffi {
 
     extern "C" {
         pub fn NodoraCompile(src: *const c_char) -> *mut c_char;
-        pub fn NodoraNewEvaluator(program_json: *const c_char) -> *mut c_char;
+        pub fn NodoraNewEvaluator(ruleset_json: *const c_char) -> *mut c_char;
         pub fn NodoraEvaluate(
             id: c_longlong,
             rule_name: *const c_char,
@@ -36,7 +36,7 @@ pub enum Error {
 pub type Result<T> = std::result::Result<T, Error>;
 
 #[derive(Debug, Clone)]
-pub struct Program {
+pub struct Ruleset {
     value: Value,
 }
 
@@ -55,17 +55,17 @@ pub struct EmittedSignal {
     pub args: Vec<Value>,
 }
 
-pub fn compile(src: &str) -> Result<Program> {
+pub fn compile(src: &str) -> Result<Ruleset> {
     let src = CString::new(src)?;
     let data = call(|| unsafe { ffi::NodoraCompile(src.as_ptr()) })?;
-    Ok(Program { value: data })
+    Ok(Ruleset { value: data })
 }
 
-impl Program {
-    pub fn from_json(json: &str) -> Result<Program> {
+impl Ruleset {
+    pub fn from_json(json: &str) -> Result<Ruleset> {
         let value: Value =
             serde_json::from_str(json).map_err(|e| Error::MalformedResponse(e.to_string()))?;
-        Ok(Program { value })
+        Ok(Ruleset { value })
     }
 
     pub fn as_value(&self) -> &Value {
@@ -77,8 +77,8 @@ impl Program {
     }
 
     pub fn evaluator(&self) -> Result<Evaluator> {
-        let program_json = CString::new(self.value.to_string())?;
-        let data = call(|| unsafe { ffi::NodoraNewEvaluator(program_json.as_ptr()) })?;
+        let ruleset_json = CString::new(self.value.to_string())?;
+        let data = call(|| unsafe { ffi::NodoraNewEvaluator(ruleset_json.as_ptr()) })?;
         let id = data
             .as_i64()
             .ok_or_else(|| Error::MalformedResponse("expected evaluator handle".into()))?;

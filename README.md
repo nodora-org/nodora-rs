@@ -26,13 +26,13 @@ Other targets build from source (needs Go 1.24+ with cgo).
 ```rust
 use serde_json::json;
 
-let program = nodora::compile(r#"
+let ruleset = nodora::compile(r#"
     rule AdultCheck {
         out is_adult = input.age >= 18
     }
 "#)?;
 
-let evaluator = program.evaluator()?;
+let evaluator = ruleset.evaluator()?;
 let result = evaluator.evaluate("AdultCheck", &json!({ "age": 21 }))?;
 
 assert_eq!(result.outputs["is_adult"], json!(true));
@@ -48,12 +48,12 @@ for signal in &result.emitted_signals {
 }
 ```
 
-A precompiled program (e.g. the output of `nodora compile`) can be loaded
+A precompiled ruleset (e.g. the output of `nodora compile`) can be loaded
 without recompiling the source:
 
 ```rust
-# let program_json = "{}";
-let program = nodora::Program::from_json(program_json)?;
+# let ruleset_json = "{}";
+let ruleset = nodora::Ruleset::from_json(ruleset_json)?;
 # Ok::<(), nodora::Error>(())
 ```
 
@@ -61,9 +61,9 @@ let program = nodora::Program::from_json(program_json)?;
 
 | Item                                                    | Purpose                                    |
 | ------------------------------------------------------- | ------------------------------------------ |
-| `compile(src) -> Program`                               | Compile Nodora source to a program.        |
-| `Program::from_json(json) -> Program`                   | Load a precompiled program.                |
-| `Program::evaluator() -> Evaluator`                     | Build a reusable evaluator.                |
+| `compile(src) -> Ruleset`                               | Compile Nodora source to a ruleset.        |
+| `Ruleset::from_json(json) -> Ruleset`                   | Load a precompiled ruleset.                |
+| `Ruleset::evaluator() -> Evaluator`                     | Build a reusable evaluator.                |
 | `Evaluator::evaluate(rule, &input) -> EvaluationResult` | Run a rule against any serializable input. |
 | `EvaluationResult { outputs, emitted_signals }`         | Named outputs and emitted signals.         |
 
