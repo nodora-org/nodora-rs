@@ -8,6 +8,10 @@ use sha2::{Digest, Sha256};
 
 const DEFAULT_BASE_URL: &str = "https://github.com/nodora-org/nodora-rs/releases/download";
 
+/// Core module version the bridge is built from when compiling from source.
+/// Override with the NODORA_VERSION env var.
+const NODORA_CORE_VERSION: &str = "v0.2.2";
+
 fn main() {
     if env::var_os("DOCS_RS").is_some() {
         println!("cargo:warning=DOCS_RS detected; skipping the Nodora native build");
@@ -18,11 +22,10 @@ fn main() {
     println!("cargo:rerun-if-env-changed=NODORA_PREBUILT_DIR");
     println!("cargo:rerun-if-env-changed=NODORA_PREBUILT_BASE_URL");
     println!("cargo:rerun-if-env-changed=NODORA_BUILD_FROM_SOURCE");
+    println!("cargo:rerun-if-env-changed=NODORA_VERSION");
 
-    let crate_dir = PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap());
     let out_dir = PathBuf::from(env::var("OUT_DIR").unwrap());
     let target = env::var("TARGET").unwrap();
-    let bridge_dir = crate_dir.join("bridge");
 
     let lib = out_dir.join("libnodora.a");
 
@@ -35,14 +38,14 @@ fn main() {
         );
         dir
     } else if truthy("NODORA_BUILD_FROM_SOURCE") {
-        build_from_source(&bridge_dir, &lib);
+        build_from_source(&lib);
         out_dir.clone()
     } else if download_prebuilt(&target, &lib) {
         out_dir.clone()
-    } else if bridge_dir.join("main.go").exists() && has_go() {
+    } else if has_go() {
         // universal fallback: no prebuilt for this target
         println!("cargo:warning=no prebuilt archive for {target}; building from source with Go");
-        build_from_source(&bridge_dir, &lib);
+        build_from_source(&lib);
         out_dir.clone()
     } else {
         panic!(
@@ -71,28 +74,45 @@ fn emit_link_flags(lib_dir: &Path, target: &str) {
     }
 }
 
-fn build_from_source(bridge_dir: &Path, dest: &Path) {
-    assert!(
-        bridge_dir.join("main.go").exists(),
-        "build from source requested but the Go bridge is missing at {}",
-        bridge_dir.display()
-    );
-    println!("cargo:rerun-if-changed={}", bridge_dir.display());
-
+fn build_from_source(dest: &Path) {
     let go = env::var("GO").unwrap_or_else(|_| "go".to_string());
+    let version = env::var("NODORA_VERSION").unwrap_or_else(|_| NODORA_CORE_VERSION.to_string());
+
+    // The bridge lives in the core module as package nodora.org/nodora/bridge.
+    // A throwaway module in OUT_DIR pins the core version for `go build` without
+    // vendoring any bridge source into this crate.
+    let work = dest.parent().unwrap().join("go-bridge-build");
+    let _ = fs::remove_dir_all(&work);
+    fs::create_dir_all(&work).expect("create go build dir");
+
+    run_go(&go, &work, &["mod", "init", "nodora-native-build"]);
+    run_go(&go, &work, &["get", &format!("nodora.org/nodora/bridge@{version}")]);
+
+    let ldflags = format!("-X nodora.org/nodora.Version={version}");
     let status = Command::new(&go)
-        .current_dir(bridge_dir)
+        .current_dir(&work)
         .env("CGO_ENABLED", "1")
         .args([
             "build",
             "-buildmode=c-archive",
+            "-ldflags",
+            ldflags.as_str(),
             "-o",
             dest.to_str().unwrap(),
-            ".",
+            "nodora.org/nodora/bridge",
         ])
         .status()
         .unwrap_or_else(|e| panic!("failed to invoke `{go}`: {e}"));
     assert!(status.success(), "go build (c-archive) failed");
+}
+
+fn run_go(go: &str, dir: &Path, args: &[&str]) {
+    let status = Command::new(go)
+        .current_dir(dir)
+        .args(args)
+        .status()
+        .unwrap_or_else(|e| panic!("failed to invoke `{go} {}`: {e}", args.join(" ")));
+    assert!(status.success(), "`go {}` failed", args.join(" "));
 }
 
 fn download_prebuilt(target: &str, dest: &Path) -> bool {

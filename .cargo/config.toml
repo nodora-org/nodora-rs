@@ -1,4 +1,5 @@
-# Forcing a source build here ensures local edits to bridge/ take effect during
-# development rather than silently linking a downloaded release archive
+# Force a source build during development so a local checkout compiles the
+# bridge from the pinned core module (nodora.org/nodora/bridge) rather than
+# silently linking a downloaded release archive.
 [env]
 NODORA_BUILD_FROM_SOURCE = "1"
