@@ -10,7 +10,7 @@ const DEFAULT_BASE_URL: &str = "https://github.com/nodora-org/nodora-rs/releases
 
 /// Core module version the bridge is built from when compiling from source.
 /// Override with the NODORA_VERSION env var.
-const NODORA_CORE_VERSION: &str = "v0.2.2";
+const NODORA_CORE_VERSION: &str = "v0.2.3";
 
 fn main() {
     if env::var_os("DOCS_RS").is_some() {
@@ -86,17 +86,18 @@ fn build_from_source(dest: &Path) {
     fs::create_dir_all(&work).expect("create go build dir");
 
     run_go(&go, &work, &["mod", "init", "nodora-native-build"]);
-    run_go(&go, &work, &["get", &format!("nodora.org/nodora/bridge@{version}")]);
+    run_go(
+        &go,
+        &work,
+        &["get", &format!("nodora.org/nodora/bridge@{version}")],
+    );
 
-    let ldflags = format!("-X nodora.org/nodora.Version={version}");
     let status = Command::new(&go)
         .current_dir(&work)
         .env("CGO_ENABLED", "1")
         .args([
             "build",
             "-buildmode=c-archive",
-            "-ldflags",
-            ldflags.as_str(),
             "-o",
             dest.to_str().unwrap(),
             "nodora.org/nodora/bridge",

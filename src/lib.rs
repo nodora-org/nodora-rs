@@ -6,7 +6,7 @@ use serde_json::Value;
 mod ffi {
     use super::{c_char, c_longlong};
 
-    extern "C" {
+    unsafe extern "C" {
         pub fn NodoraCompile(src: *const c_char) -> *mut c_char;
         pub fn NodoraNewEvaluator(ruleset_json: *const c_char) -> *mut c_char;
         pub fn NodoraEvaluate(
