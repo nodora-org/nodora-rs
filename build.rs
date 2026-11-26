@@ -10,7 +10,7 @@ const DEFAULT_BASE_URL: &str = "https://github.com/nodora-org/nodora-rs/releases
 
 /// Core module version the bridge is built from when compiling from source.
 /// Override with the NODORA_VERSION env var.
-const NODORA_CORE_VERSION: &str = "v0.2.3";
+const NODORA_CORE_VERSION: &str = "v0.3.0";
 
 fn main() {
     if env::var_os("DOCS_RS").is_some() {
